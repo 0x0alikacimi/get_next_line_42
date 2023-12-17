@@ -5,74 +5,119 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: abkacimi <abkacimi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/12/15 19:32:00 by abkacimi          #+#    #+#             */
-/*   Updated: 2023/12/15 19:32:01 by abkacimi         ###   ########.fr       */
+/*   Created: 2023/12/16 18:40:33 by abkacimi          #+#    #+#             */
+/*   Updated: 2023/12/17 19:51:36 by abkacimi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "get_next_line.h"
 
-
-#ifndef "GET_NEXT_LINE_H"
-# define "GET_NEXT_LINE_H"
-
-char    *get_reminder(char **str, int nl)
+char	*the_next_line(char *buff)
 {
-    char    *reminder;
-    int        rlen;
+	int		i;
+	int		j;
+	char	*line;
 
-    rlen = ft_strlen(*str + nl);
-    reminder = ft_substr(*str, nl, rlen);
-    free(*str);
-    *str = NULL;
-    return (reminder);
+	i = 0;
+	if (!buff)
+		return (NULL);
+	while (buff[i] && buff[i] != '\n')
+		i++;
+	if (buff[i] == '\n')
+		i++;
+	if (buff[i] == '\0')
+		return (free(buff), NULL);
+	line = malloc(sizeof(char) * (ft_strlen(buff) - i + 1));
+	if (!line)
+		return (free(buff), NULL);
+	j = 0;
+	while (buff[i])
+		line[j++] = buff[i++];
+	line[j] = '\0';
+	return (free(buff), line);
 }
 
-char    *func(char **line, char **tmp, int nl)
+char	*the_line(char *buff)
 {
-    *line = ft_substr(*tmp, 0, nl + 1);
-    *tmp = get_reminder(tmp, nl + 1);
-    return (*line);
+	char	*line;
+	int		i;
+
+	i = 0;
+	if (!buff[i])
+		return (NULL);
+	while (buff[i] && buff[i] != '\n')
+		i++;
+	if (buff[i] == '\n')
+		i++;
+	line = malloc(sizeof(char) * (i + 1));
+	if (!line)
+		return (NULL);
+	i = 0;
+	while (buff[i] && buff[i] != '\n')
+	{
+		line[i] = buff[i];
+		i++;
+	}
+	if (buff[i] == '\n')
+		line[i++] = '\n';
+	line[i] = '\0';
+	return (line);
 }
 
-int    check_newline(char *buff)
+char	*fd_read(int fd, char *result)
 {
-    int    i;
+	char	*buffer;
+	int		num_bytes;
 
-    i = 0;
-    while (buff[i])
-    {
-        if (buff[i] == '\n')
-            return (i);
-        i++;
-    }
-    return (-1);
+	buffer = malloc(sizeof(char) * ((size_t)BUFFER_SIZE + 1));
+	if (!buffer)
+		return (free(result), NULL);
+	num_bytes = 1;
+	while (num_bytes > 0)
+	{
+		num_bytes = read(fd, buffer, BUFFER_SIZE);
+		if (num_bytes == -1)
+			return (free(buffer), free(result), NULL);
+		buffer[num_bytes] = '\0';
+		result = ft_strjoin(result, buffer);
+		if (ft_strchr(buffer, '\n'))
+			break ;
+	}
+	return (free(buffer), result);
 }
 
-char    *get_next_line(int fd)
+char	*get_next_line(int fd)
 {
-    static char    *tmp;
-    char        buff[BUFFER_SIZE + 1];
-    char        *line;
-    int            ret;
-    int            nl;
+	static char	*buff;
+	char		*line;
 
-    if (!tmp)
-        tmp = ft_strdup("");
-    ret = read(fd, buff, BUFFER_SIZE);
-    while (ret >= 0)
-    {
-        buff[ret] = 0;
-        tmp = ft_strjoin(tmp, buff);
-        nl = check_newline(tmp);
-        if (nl != -1)
-            return (func(&line, &tmp, nl));
-        if (!ret && !tmp[0])
-            break ;
-        if (!ret)
-            return (get_reminder(&tmp, 0));
-        ret = read(fd, buff, BUFFER_SIZE);
-    }
-    free(tmp);
-    tmp = NULL;
-    return (NULL);
+	if (fd < 0 || BUFFER_SIZE <= 0)
+		return (NULL);
+	buff = fd_read(fd, buff);
+	if (!buff)
+		return (NULL);
+	line = the_line(buff);
+	buff = the_next_line(buff);
+	if (!line)
+	{
+		free(buff);
+		buff = NULL;
+	}
+	return (line);
 }
+
+// #include <libc.h>
+// int main()
+// {
+// 	int fd = open("text.txt", O_CREAT | O_RDWR, 0777);
+// 	write (fd, "kacimi\nHello\ngood", 17);
+// 	fd = open("text.txt", O_RDWR);
+// 	char *s = get_next_line(fd);
+// 	printf("%s", s);
+// 	// s = get_next_line(fd);
+// 	// printf("%s", s);
+// 	// s = get_next_line(fd);
+// 	// printf("%s", s);
+// 	// s = get_next_line(fd);
+// 	// printf("%s", s);
+// }
